@@ -6,6 +6,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
@@ -15,6 +16,7 @@ import org.springframework.web.bind.annotation.RestController;
 import cl.duoc.barriodigital.rabbitadmin.dto.BindingRequest;
 import cl.duoc.barriodigital.rabbitadmin.dto.ExchangeRequest;
 import cl.duoc.barriodigital.rabbitadmin.dto.OperationResponse;
+import cl.duoc.barriodigital.rabbitadmin.dto.QueueInfoResponse;
 import cl.duoc.barriodigital.rabbitadmin.dto.QueueRequest;
 import cl.duoc.barriodigital.rabbitadmin.service.RabbitAdminService;
 
@@ -61,6 +63,19 @@ public class RabbitAdminController {
                 );
     }
 
+    @GetMapping("/queues/{name}")
+    public ResponseEntity<QueueInfoResponse> getQueue(
+
+            @PathVariable
+            @NotBlank
+            @Pattern(regexp = "^[A-Za-z0-9._-]+$")
+            String name) {
+
+        return ResponseEntity.ok(
+                rabbitAdminService.getQueue(name)
+        );
+    }
+
     @DeleteMapping("/queues/{name}")
     public ResponseEntity<OperationResponse> deleteQueue(
 
@@ -69,16 +84,7 @@ public class RabbitAdminController {
             @Pattern(regexp = "^[A-Za-z0-9._-]+$")
             String name) {
 
-        boolean deleted =
-                rabbitAdminService.deleteQueue(name);
-
-        if (!deleted) {
-
-            throw new IllegalArgumentException(
-                    "La cola no existe o no pudo ser eliminada: "
-                            + name
-            );
-        }
+        rabbitAdminService.deleteQueue(name);
 
         return ResponseEntity.ok(
                 new OperationResponse(
@@ -123,16 +129,7 @@ public class RabbitAdminController {
             @Pattern(regexp = "^[A-Za-z0-9._-]+$")
             String name) {
 
-        boolean deleted =
-                rabbitAdminService.deleteExchange(name);
-
-        if (!deleted) {
-
-            throw new IllegalArgumentException(
-                    "El exchange no existe o no pudo ser eliminado: "
-                            + name
-            );
-        }
+        rabbitAdminService.deleteExchange(name);
 
         return ResponseEntity.ok(
                 new OperationResponse(

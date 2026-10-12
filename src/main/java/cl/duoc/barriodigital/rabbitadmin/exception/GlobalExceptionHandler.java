@@ -86,6 +86,21 @@ public class GlobalExceptionHandler {
                 .body(body);
     }
 
+    @ExceptionHandler(ResourceNotFoundException.class)
+    // Maneja recursos de RabbitMQ inexistentes
+    public ResponseEntity<Map<String, Object>> handleNotFound(
+            ResourceNotFoundException exception) {
+
+        return ResponseEntity
+                .status(HttpStatus.NOT_FOUND)
+                .body(
+                        baseError(
+                                HttpStatus.NOT_FOUND,
+                                exception.getMessage()
+                        )
+                );
+    }
+
     @ExceptionHandler(AmqpException.class)
     // Maneja las excepciones relacionadas con RabbitMQ
     public ResponseEntity<Map<String, Object>> handleRabbitMq(
