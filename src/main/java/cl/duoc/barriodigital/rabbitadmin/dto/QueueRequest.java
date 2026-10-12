@@ -21,9 +21,17 @@ public record QueueRequest(
         Boolean autoDelete,
 
         @Size(max = 120)
+        @Pattern(
+                regexp = "^[A-Za-z0-9._-]*$",
+                message = "El deadLetterExchange contiene caracteres inválidos"
+        )
         String deadLetterExchange,
 
         @Size(max = 120)
+        @Pattern(
+                regexp = "^[A-Za-z0-9._-]*$",
+                message = "La deadLetterRoutingKey contiene caracteres inválidos"
+        )
         String deadLetterRoutingKey
 ) {
 }

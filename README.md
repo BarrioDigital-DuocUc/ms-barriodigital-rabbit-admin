@@ -129,6 +129,31 @@ Código HTTP:
 
 ---
 
+### Consultar queue
+
+```http
+GET /api/v1/rabbit/queues/{name}
+```
+
+Devuelve los mensajes pendientes y los consumidores conectados. Sirve para verificar cuántos mensajes llegaron a una DLQ.
+
+```json
+{
+  "name": "q.cmd.email.dlq",
+  "messageCount": 2,
+  "consumerCount": 0
+}
+```
+
+Código HTTP esperado:
+
+```text
+200 OK
+404 Not Found   (la cola no existe)
+```
+
+---
+
 ### Eliminar queue
 
 ```http
@@ -145,6 +170,7 @@ Código HTTP esperado:
 
 ```text
 200 OK
+404 Not Found   (la cola no existe)
 ```
 
 ---
@@ -214,6 +240,7 @@ Código HTTP esperado:
 
 ```text
 200 OK
+404 Not Found   (el exchange no existe)
 ```
 
 ---
@@ -248,6 +275,7 @@ Código HTTP esperado:
 
 ```text
 201 Created
+404 Not Found   (el exchange o la cola no existen)
 ```
 
 ---
@@ -288,7 +316,12 @@ Se validan, entre otros:
 - Tipo de exchange.
 - Routing key.
 - Configuraciones DLX incompletas.
+- DLX inexistente al crear una cola.
 - Combinaciones inválidas de queue durable/exclusive.
+- Prefijo `amq.`, reservado por RabbitMQ.
+- Existencia previa del exchange y la cola antes de crear o eliminar bindings.
+
+RabbitMQ trata la eliminación como idempotente (borrar algo inexistente no falla), por eso el servicio verifica la existencia antes y responde `404 Not Found` en vez de un `200` engañoso.
 
 Ejemplo inválido:
 
@@ -336,10 +369,11 @@ exception/GlobalExceptionHandler.java
 Se manejan:
 
 ```text
-MethodArgumentNotValidException
-ConstraintViolationException
-IllegalArgumentException
-AmqpException
+MethodArgumentNotValidException  -> 400
+ConstraintViolationException     -> 400
+IllegalArgumentException         -> 400
+ResourceNotFoundException        -> 404
+AmqpException                    -> 502
 ```
 
 Las respuestas incluyen:
@@ -366,6 +400,7 @@ Responsabilidades:
 
 ```text
 createQueue()
+getQueue()
 deleteQueue()
 
 createExchange()
@@ -503,6 +538,15 @@ DELETE /api/v1/rabbit/exchanges/{name}
 
 Las operaciones fueron verificadas contra RabbitMQ real mediante RabbitMQ Management.
 
+## Pruebas automatizadas
+
+```powershell
+.\mvnw.cmd test
+```
+
+- `RabbitAdminServiceTest`: reglas de negocio del servicio con `RabbitAdmin` simulado (Mockito).
+- `RabbitAdminControllerTest`: códigos HTTP y validaciones de los DTO con `@WebMvcTest`.
+
 ---
 
 # Estructura principal
@@ -518,6 +562,7 @@ src/main/java/cl/duoc/barriodigital/rabbitadmin
 │
 ├── dto
 │   ├── QueueRequest.java
+│   ├── QueueInfoResponse.java
 │   ├── ExchangeRequest.java
 │   ├── BindingRequest.java
 │   └── OperationResponse.java
@@ -526,7 +571,8 @@ src/main/java/cl/duoc/barriodigital/rabbitadmin
 │   └── RabbitAdminService.java
 │
 ├── exception
-│   └── GlobalExceptionHandler.java
+│   ├── GlobalExceptionHandler.java
+│   └── ResourceNotFoundException.java
 │
 └── MsBarriodigitalRabbitAdminApplication.java
 ```
